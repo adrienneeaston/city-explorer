@@ -48,7 +48,7 @@ app.get('/hello', (request, response) => {
 });
 
 app.get('/location', locationHandler);
-// app.get('/weather', weatherHandler);
+app.get('/weather', weatherHandler);
 // app.get('/events', eventsHandler);
 // app.get('/yelp', yelpHandler);
 // app.get('/trails', trailsHandler);
@@ -65,13 +65,12 @@ function locationHandler(request, response) {
   let city = request.query.city;
   let key = process.env.GEOCODE_API_KEY;
   const url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;        
-    return superagent.get(url)
-      .then(data => {
-        const location = new Location(city, data);
-        console.log('!!!!!!!!', data); 
-        return response.status(200).json(location);
-      })
-      .catch((error) => errorHandler(error, request, response));
+  return superagent.get(url)
+    .then(data => {
+      const location = new Location(city, data); 
+      return response.status(200).json(location);
+    })
+    .catch((error) => errorHandler(error, request, response));
 }
 
 function Location(city, data) {
@@ -84,37 +83,45 @@ function Location(city, data) {
 // // -------------------------------------------
 // // WEATHER
 // // -------------------------------------------
-// function weatherHandler(request, response) {
-//   let latitude = request.query.latitude;
-//   let longitude = request.query.longitude;
-//   // Alternatively: let {latitude, longitude} = request.query;
 
-//   getWeather(latitude, longitude)
-//     .then(summaries => sendJson(summaries, response))
-//     .catch((error) => errorHandler(error, request, response));
-// }
+function weatherHandler(request, response) {
+  let latitude = request.query.latitude;
+  let longitude = request.query.longitude;
+  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${latitude},${longitude}`;
+  return superagent.get(url)
+    .then(data => {
+      const weatherSummaries = data.daily.map(day => {
+        return new Weather(day);
+      });
+      return Promise.resolve(weatherSummaries);
+    })
 
-// function getWeather(latitude, longitude) {
-//   const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${latitude},${longitude}`;
-//   return superagent.get(url)
-//     .then(data => parseWeatherData(data.body));
-// }
+  getWeather(latitude, longitude)
+    .then(summaries => sendJson(summaries, response))
+    .catch((error) => errorHandler(error, request, response));
+}
 
-// function parseWeatherData(data) {
-//   try {
-//     const weatherSummaries = data.daily.data.map(day => {
-//       return new Weather(day);
-//     });
-//     return Promise.resolve(weatherSummaries);
-//   } catch (e) {
-//     return Promise.reject(e);
-//   }
-// }
+function getWeather(latitude, longitude) {
+  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${latitude},${longitude}`;
+  return superagent.get(url)
+    .then(data => parseWeatherData(data.body));
+}
 
-// function Weather(day) {
-//   this.forecast = day.summary;
-//   this.time = new Date(day.time * 1000).toString().slice(0, 15);
-// }
+function parseWeatherData(data) {
+  try {
+    const weatherSummaries = data.daily.data.map(day => {
+      return new Weather(day);
+    });
+    return Promise.resolve(weatherSummaries);
+  } catch (e) {
+    return Promise.reject(e);
+  }
+}
+
+function Weather(day) {
+  this.forecast = day.summary;
+  this.time = new Date(day.time * 1000).toString().slice(0, 15);
+}
 
 // // -------------------------------------------
 // // Events
