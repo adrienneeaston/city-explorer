@@ -64,10 +64,11 @@ app.use(errorHandler);
 function locationHandler(request, response) {
   let city = request.query.city;
   let key = process.env.GEOCODE_API_KEY;
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${city}&key=${key}`;
+  const url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;        
     return superagent.get(url)
       .then(data => {
         const location = new Location(city, data);
+        console.log('!!!!!!!!', data); 
         return response.status(200).json(location);
       })
       .catch((error) => errorHandler(error, request, response));
@@ -75,9 +76,9 @@ function locationHandler(request, response) {
 
 function Location(city, data) {
   this.search_query = city
-  this.formatted_query = data.display_name;
-  this.latitude = data.lat;
-  this.longitude = data.lon;
+  this.formatted_query = data.body[0].display_name;
+  this.latitude = data.body[0].lat;
+  this.longitude = data.body[0].lon;
 }
 
 // // -------------------------------------------
